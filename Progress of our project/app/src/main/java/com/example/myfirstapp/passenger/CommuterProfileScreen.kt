@@ -537,46 +537,79 @@ fun CommuterProfileScreen(
     if (showHelpDialog) {
         AlertDialog(
             onDismissRequest = { showHelpDialog = false },
+            containerColor = Color.White,
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.SupportAgent, contentDescription = null, tint = TransitGreen)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("TransitGo Help & Support", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                    Icon(Icons.Default.SupportAgent, contentDescription = null, tint = TransitGreen, modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text("TransitGo Help & Support", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
                 }
             },
             text = {
                 Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text("📞 Hotline: (043) 980-0385", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TransitGreen)
-                            Text("✉️ Email: support@transitgo.ph", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TransitGreen)
-                            Text("⏰ Service Hours: 6:00 AM - 10:00 PM Daily", fontSize = 11.sp, color = Color.DarkGray)
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Text("📞 Hotline: (043) 980-0385", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TransitGreen)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("✉️ Email: support@transitgo.ph", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TransitGreen)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("⏰ Service Hours: 6:00 AM - 10:00 PM Daily", fontSize = 12.sp, color = Color.DarkGray, fontWeight = FontWeight.Medium)
                         }
                     }
 
-                    Text("Frequently Asked Questions (FAQs)", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Black)
+                    Text("Frequently Asked Questions (FAQs)", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color.Black)
 
-                    Text("Q: How do I track my bus in real time?", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Text("A: Tap 'Live Bus Tracker' on your home screen or select a route to view GPS locations.", fontSize = 11.sp, color = Color.DarkGray)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F8F6))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("Q: How do I track my bus in real time?", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TransitGreen)
+                            Text("A: Tap 'Live Bus Tracker' on your home screen or select a route to view GPS locations.", fontSize = 12.sp, color = Color.DarkGray)
+                        }
+                    }
 
-                    Text("Q: How do I pay using GCash / PayMaya?", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Text("A: Select your route, tap 'Book Ticket', and choose GCash/PayMaya to scan the official QR code.", fontSize = 11.sp, color = Color.DarkGray)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F8F6))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("Q: How do I pay using GCash / PayMaya?", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TransitGreen)
+                            Text("A: Select your route, tap 'Book Ticket', and choose GCash/PayMaya to scan the official QR code.", fontSize = 12.sp, color = Color.DarkGray)
+                        }
+                    }
 
-                    Text("Q: What if I lose something on the bus?", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Text("A: Call our support hotline immediately with your Bus Number and Schedule ID.", fontSize = 11.sp, color = Color.DarkGray)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F8F6))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("Q: What if I lose something on the bus?", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TransitGreen)
+                            Text("A: Call our support hotline immediately with your Bus Number and Schedule ID.", fontSize = 12.sp, color = Color.DarkGray)
+                        }
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = { showHelpDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = TransitGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = TransitGreen),
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("Close")
+                    Text("Close", fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         )
