@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -151,55 +152,83 @@ fun CommuterMainScreen(
                     }
                 )
                 "Bookings" -> {
-                    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                        Text("My Seat Bookings", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray)
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        if (bookingsList.isEmpty()) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(Icons.Default.ConfirmationNumber, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text("No active bookings yet", color = Color.Gray)
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Button(
-                                        onClick = { flowStep = "Search" },
-                                        colors = ButtonDefaults.buttonColors(containerColor = TransitGreen)
-                                    ) {
-                                        Text("Book a Bus Trip Now")
-                                    }
+                    Scaffold(
+                        topBar = {
+                            Surface(
+                                color = TransitGreen,
+                                shadowElevation = 4.dp
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .statusBarsPadding()
+                                ) {
+                                    TopAppBar(
+                                        title = { Text("My Seat Bookings", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                                        navigationIcon = {
+                                            IconButton(onClick = { selectedTab = "Home" }) {
+                                                Icon(
+                                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                                    contentDescription = "Back to Home",
+                                                    tint = Color.White
+                                                )
+                                            }
+                                        },
+                                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                                        windowInsets = WindowInsets(0, 0, 0, 0)
+                                    )
                                 }
                             }
-                        } else {
-                            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxSize()) {
-                                items(bookingsList) { b ->
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                                    ) {
-                                        Column(modifier = Modifier.padding(16.dp)) {
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                Text("Bus: ${b.busId}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TransitGreen)
-                                                Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFF4CAF50)) {
-                                                    Text(b.status, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                        },
+                        containerColor = Color(0xFFF5F8F6)
+                    ) { innerPadding ->
+                        Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
+                            if (bookingsList.isEmpty()) {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(Icons.Default.ConfirmationNumber, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text("No active bookings yet", color = Color.Gray)
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Button(
+                                            onClick = { flowStep = "Search" },
+                                            colors = ButtonDefaults.buttonColors(containerColor = TransitGreen)
+                                        ) {
+                                            Text("Book a Bus Trip Now")
+                                        }
+                                    }
+                                }
+                            } else {
+                                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxSize()) {
+                                    items(bookingsList) { b ->
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                        ) {
+                                            Column(modifier = Modifier.padding(16.dp)) {
+                                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                    Text("Bus: ${b.busId}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TransitGreen)
+                                                    Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFF4CAF50)) {
+                                                        Text(b.status, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                                    }
                                                 }
-                                            }
-                                            Spacer(modifier = Modifier.height(6.dp))
-                                            Text("Route: ${b.routeName}", fontSize = 13.sp)
-                                            Text("Booked Seats: ${b.seats.joinToString()}", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                            Text("Total Paid: ₱%.2f".format(b.totalPrice), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = TransitGreen)
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                Text("Route: ${b.routeName}", fontSize = 13.sp)
+                                                Text("Booked Seats: ${b.seats.joinToString()}", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                Text("Total Paid: ₱%.2f".format(b.totalPrice), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = TransitGreen)
 
-                                            Spacer(modifier = Modifier.height(10.dp))
-                                            Button(
-                                                onClick = { flowStep = "LiveTracking" },
-                                                colors = ButtonDefaults.buttonColors(containerColor = TransitGreen),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Icon(Icons.Default.LocationOn, contentDescription = null)
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text("Track Live Bus")
+                                                Spacer(modifier = Modifier.height(10.dp))
+                                                Button(
+                                                    onClick = { flowStep = "LiveTracking" },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = TransitGreen),
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Icon(Icons.Default.LocationOn, contentDescription = null)
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text("Track Live Bus")
+                                                }
                                             }
                                         }
                                     }
