@@ -36,10 +36,22 @@ fun CommuterBusStopsScreen() {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Bus Stops & Terminal Directory", color = Color.White, fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = TransitGreen)
-            )
+            Surface(
+                color = TransitGreen,
+                shadowElevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                ) {
+                    TopAppBar(
+                        title = { Text("Bus Stops & Terminal Directory", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                        windowInsets = WindowInsets(0, 0, 0, 0)
+                    )
+                }
+            }
         },
         containerColor = Color(0xFFF5F8F6)
     ) { padding ->

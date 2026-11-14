@@ -165,20 +165,32 @@ fun CommuterHome(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("Hello, ${user.fullname.substringBefore(' ')}!", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 19.sp)
-                        Text("Where would you like to go?", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = TransitGreen)
-            )
+            Surface(
+                color = TransitGreen,
+                shadowElevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                ) {
+                    TopAppBar(
+                        title = {
+                            Column {
+                                Text("Hello, ${user.fullname.substringBefore(' ')}!", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Text("Where would you like to go?", color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp)
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = onLogout) {
+                                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color.White)
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                        windowInsets = WindowInsets(0, 0, 0, 0)
+                    )
+                }
+            }
         },
         containerColor = Color(0xFFF5F8F6)
     ) { padding ->

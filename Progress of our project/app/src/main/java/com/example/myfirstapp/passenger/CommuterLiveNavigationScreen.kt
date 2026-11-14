@@ -202,22 +202,32 @@ fun CommuterLiveNavigationScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("Commuter Live Bus Tracker", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.White)
-                        Text("Route: $cleanStart ➔ $cleanDest", fontSize = 11.sp, color = Color.White.copy(alpha = 0.85f))
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-
-
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = TransitGreen)
-            )
+            Surface(
+                color = TransitGreen,
+                shadowElevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                ) {
+                    TopAppBar(
+                        title = {
+                            Column {
+                                Text("Commuter Live Bus Tracker", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.White)
+                                Text("Route: $cleanStart ➔ $cleanDest", fontSize = 11.sp, color = Color.White.copy(alpha = 0.85f))
+                            }
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                        windowInsets = WindowInsets(0, 0, 0, 0)
+                    )
+                }
+            }
         }
     ) { padding ->
         Box(

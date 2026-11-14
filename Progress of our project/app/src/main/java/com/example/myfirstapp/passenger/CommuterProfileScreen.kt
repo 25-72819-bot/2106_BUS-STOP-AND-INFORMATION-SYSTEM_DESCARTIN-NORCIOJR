@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.CameraAlt
@@ -50,10 +51,14 @@ import com.example.myfirstapp.user
 @Composable
 fun CommuterProfileScreen(
     user: user,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("TransitGoPrefs", Context.MODE_PRIVATE) }
+    androidx.activity.compose.BackHandler(enabled = true) {
+        onBack()
+    }
 
     // State variables for profile details
     var fullName by remember { mutableStateOf(user.fullname) }
@@ -122,10 +127,31 @@ fun CommuterProfileScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Commuter Profile & Settings", color = Color.White, fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = TransitGreen)
-            )
+            Surface(
+                color = TransitGreen,
+                shadowElevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                ) {
+                    TopAppBar(
+                        title = { Text("Commuter Profile & Settings", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                        navigationIcon = {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = Color.White
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                        windowInsets = WindowInsets(0, 0, 0, 0)
+                    )
+                }
+            }
         },
         containerColor = Color(0xFFF5F8F6)
     ) { padding ->
