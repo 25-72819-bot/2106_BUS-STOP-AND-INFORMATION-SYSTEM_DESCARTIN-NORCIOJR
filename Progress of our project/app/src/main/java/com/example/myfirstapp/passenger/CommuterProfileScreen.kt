@@ -78,6 +78,15 @@ fun CommuterProfileScreen(
 
     // Help & Support dialog state
     var showHelpDialog by remember { mutableStateOf(false) }
+    var showChatbot by remember { mutableStateOf(false) }
+
+    if (showChatbot) {
+        CommuterChatbot(
+            user = user,
+            onBack = { showChatbot = false }
+        )
+        return
+    }
 
     // SweetAlert message state
     var alertTitle by remember { mutableStateOf("") }
@@ -441,19 +450,19 @@ fun CommuterProfileScreen(
 
                     HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
 
-                    // Help & Support Tile
+                    // Help & Support AI Chatbot Tile
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { showHelpDialog = true }
+                            .clickable { showChatbot = true }
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(Icons.Default.SupportAgent, contentDescription = null, tint = TransitGreen, modifier = Modifier.size(22.dp))
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Help & Support Hotline", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Black)
-                            Text("Customer service FAQs and contact details", fontSize = 11.sp, color = Color.Gray)
+                            Text("Help & Support AI Chatbot", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Black)
+                            Text("24/7 AI commuter assistant, FAQs & hotline", fontSize = 11.sp, color = Color.Gray)
                         }
                         Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp))
                     }
