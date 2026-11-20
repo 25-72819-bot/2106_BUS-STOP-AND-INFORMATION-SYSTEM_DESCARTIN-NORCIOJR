@@ -148,8 +148,8 @@ suspend fun fetchLiveOpenStreetMapSuggestions(query: String): List<LocationSugge
 }
 
 object DatabaseManager {
-    private const val SUPABASE_URL = "https://ulhylotzjyvevtiufrmb.supabase.co/rest/v1"
-    private const val SUPABASE_KEY = "sb_publishable_5oMPc30otC3gVjqvTH_SUA_JWwlIn9U"
+    private const val SUPABASE_URL = "https://mbnfczuzhfiksjrhgezo.supabase.co/rest/v1"
+    private const val SUPABASE_KEY = "sb_publishable_6VC-YMj-31I_HfkuO29D-w_tbZMYUHm"
 
     private val ioScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
