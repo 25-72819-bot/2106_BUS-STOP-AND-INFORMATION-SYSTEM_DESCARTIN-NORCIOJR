@@ -205,7 +205,6 @@ object DatabaseManager {
                 put("email", user.email)
                 put("role", user.role)
                 put("password", user.password)
-                put("image_url", user.imageUrl)
             }.toString()
 
             try {
@@ -258,8 +257,7 @@ object DatabaseManager {
                             val email = obj.safeString("email")
                             val role = obj.safeString("role", "Passenger")
                             val password = obj.safeString("password")
-                            val imageUrl = obj.safeString("image_url")
-                            onSuccess(user(uId, fullname, email, password, role, imageUrl))
+                            onSuccess(user(uId, fullname, email, password, role, ""))
                         } else {
                             onSuccess(null)
                         }
@@ -994,7 +992,7 @@ object DatabaseManager {
                                         email = uEmail,
                                         password = uPass,
                                         role = obj.safeString("role", "Passenger"),
-                                        imageUrl = obj.safeString("image_url")
+                                        imageUrl = ""
                                     )
                                     break
                                 }
