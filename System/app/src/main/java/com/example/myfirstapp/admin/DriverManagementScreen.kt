@@ -567,6 +567,7 @@ fun DriverManagementScreen(onBack: () -> Unit) {
         var isScanningOCR by remember { mutableStateOf(false) }
         var ocrSuccessMsg by remember { mutableStateOf("") }
         var dialogError by remember { mutableStateOf("") }
+        var isSaving by remember { mutableStateOf(false) }
 
         // License Expiration Date Live Validation
         val (isExpiryValid, expiryValidationMsg) = remember(licenseExpiry) { validateLicenseExpiry(licenseExpiry) }
@@ -983,6 +984,18 @@ fun DriverManagementScreen(onBack: () -> Unit) {
                                 val finalName = if (driverName.isNotBlank()) driverName.trim() else (if (finalEmail.contains("@")) finalEmail.split("@")[0] else "Driver")
                                 val finalExpiry = if (licenseExpiry.isNotBlank()) licenseExpiry.trim() else "2028-12-31"
 
+                                if (finalEmail.isBlank()) {
+                                    dialogError = "Please enter a driver login email"
+                                    return@Button
+                                }
+                                if (licenseNumber.isBlank()) {
+                                    dialogError = "Please enter license number"
+                                    return@Button
+                                }
+
+                                isSaving = true
+                                dialogError = ""
+
                                 val newDriver = DriverRecord(
                                     driverId = autoDriverId,
                                     driverName = finalName,
@@ -995,14 +1008,6 @@ fun DriverManagementScreen(onBack: () -> Unit) {
                                     password = finalPass
                                 )
 
-                                // Save or update driver directly in Cloud Firestore
-                                val existingIndex = driverList.indexOfFirst { it.driverId == autoDriverId }
-                                if (existingIndex != -1) {
-                                    driverList[existingIndex] = newDriver
-                                } else {
-                                    driverList.add(0, newDriver)
-                                }
-
                                 DatabaseManager.saveDriverDetails(
                                     driverId = autoDriverId,
                                     driverName = finalName,
@@ -1012,16 +1017,34 @@ fun DriverManagementScreen(onBack: () -> Unit) {
                                     assignedBus = targetDriver?.assignedBus ?: "Unassigned",
                                     employmentStatus = selectedStatus,
                                     email = finalEmail,
-                                    password = finalPass
+                                    password = finalPass,
+                                    onSuccess = {
+                                        isSaving = false
+                                        val existingIndex = driverList.indexOfFirst { it.driverId == autoDriverId }
+                                        if (existingIndex != -1) {
+                                            driverList[existingIndex] = newDriver
+                                        } else {
+                                            driverList.add(0, newDriver)
+                                        }
+                                        Toast.makeText(context, "Driver $finalName saved to Cloud Database!", Toast.LENGTH_SHORT).show()
+                                        showAddDialog = false
+                                        editingDriver = null
+                                    },
+                                    onFailure = { e ->
+                                        isSaving = false
+                                        dialogError = e.localizedMessage ?: "Failed to save driver"
+                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                                    }
                                 )
-
-                                Toast.makeText(context, "Driver $finalName saved to Cloud Database!", Toast.LENGTH_SHORT).show()
-                                showAddDialog = false
-                                editingDriver = null
                             },
+                            enabled = !isSaving,
                             colors = ButtonDefaults.buttonColors(containerColor = AdminGreen)
                         ) {
-                            Text("Save Driver", color = Color.White, fontWeight = FontWeight.Bold)
+                            if (isSaving) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            } else {
+                                Text("Save Driver", color = Color.White, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
