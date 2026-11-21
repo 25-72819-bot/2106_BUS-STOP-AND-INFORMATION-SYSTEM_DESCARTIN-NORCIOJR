@@ -202,38 +202,38 @@ fun LoginScreen(
                                 val trimmedInput = email.trim()
                                 val trimmedPass = password.trim()
 
-                                DatabaseManager.authenticateDriver(
-                                    identifier = trimmedInput,
+                                DatabaseManager.authenticateUser(
+                                    emailInput = trimmedInput,
                                     passwordInput = trimmedPass,
-                                    onResult = { matchedDriver, _ ->
-                                        if (matchedDriver != null) {
+                                    onResult = { userObj, _ ->
+                                        if (userObj != null) {
                                             isLoading = false
                                             errorMessage = ""
                                             saveOrClearCredentials()
-
-                                            val loggedInDriver = user(
-                                                userId = matchedDriver.driverId,
-                                                fullname = matchedDriver.driverName,
-                                                email = matchedDriver.email.ifBlank { "${matchedDriver.driverId.lowercase()}@transitgo.com" },
-                                                password = matchedDriver.password.ifBlank { trimmedPass },
-                                                role = "Driver"
-                                            )
-
-                                            DatabaseManager.saveUser(loggedInDriver)
-                                            Toast.makeText(context, "Logged in as Driver (${matchedDriver.driverName})", Toast.LENGTH_SHORT).show()
-                                            onLoginSuccess(loggedInDriver)
+                                            DatabaseManager.saveUser(userObj)
+                                            Toast.makeText(context, "Logged in as ${userObj.role} (${userObj.fullname})", Toast.LENGTH_SHORT).show()
+                                            onLoginSuccess(userObj)
                                         } else {
-                                            DatabaseManager.authenticateUser(
-                                                emailInput = trimmedInput,
+                                            DatabaseManager.authenticateDriver(
+                                                identifier = trimmedInput,
                                                 passwordInput = trimmedPass,
-                                                onResult = { userObj, errorMsg ->
+                                                onResult = { matchedDriver, errorMsg ->
                                                     isLoading = false
-                                                    if (userObj != null) {
+                                                    if (matchedDriver != null) {
                                                         errorMessage = ""
                                                         saveOrClearCredentials()
-                                                        DatabaseManager.saveUser(userObj)
-                                                        Toast.makeText(context, "Logged in as ${userObj.role} (${userObj.fullname})", Toast.LENGTH_SHORT).show()
-                                                        onLoginSuccess(userObj)
+
+                                                        val loggedInDriver = user(
+                                                            userId = matchedDriver.driverId,
+                                                            fullname = matchedDriver.driverName,
+                                                            email = matchedDriver.email.ifBlank { "${matchedDriver.driverId.lowercase()}@transitgo.com" },
+                                                            password = matchedDriver.password.ifBlank { trimmedPass },
+                                                            role = "Driver"
+                                                        )
+
+                                                        DatabaseManager.saveUser(loggedInDriver)
+                                                        Toast.makeText(context, "Logged in as Driver (${matchedDriver.driverName})", Toast.LENGTH_SHORT).show()
+                                                        onLoginSuccess(loggedInDriver)
                                                     } else {
                                                         errorMessage = errorMsg ?: "Invalid email or password / Account not found"
                                                     }

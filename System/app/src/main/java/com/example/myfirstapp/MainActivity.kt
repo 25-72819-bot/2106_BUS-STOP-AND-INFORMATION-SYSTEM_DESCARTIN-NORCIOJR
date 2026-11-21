@@ -220,7 +220,7 @@ fun MainApp() {
                 val requestLogout = { showLogoutDialog = true }
                 if (user != null) {
                     when (user.role.trim().lowercase()) {
-                        "admin", "staff" -> {
+                        "admin", "administrator", "staff" -> {
                             AdminDashboardScreen(
                                 user = user,
                                 onLogout = requestLogout
@@ -257,7 +257,7 @@ fun HomeScreen(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (user.role == "Driver") {
+    if (user.role.trim().lowercase() == "driver") {
         com.example.myfirstapp.driver.DriverScheduleScreen(
             user = user,
             onLogout = onLogout
