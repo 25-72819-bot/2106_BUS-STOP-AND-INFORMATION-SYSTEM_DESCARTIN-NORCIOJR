@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS bus_schedules (
     schedule_id TEXT PRIMARY KEY,
     bus_number TEXT,
     route_name TEXT,
+    driver_name TEXT,
     departure_time TEXT,
     arrival_time TEXT,
     status TEXT DEFAULT 'Scheduled',
@@ -107,7 +108,9 @@ CREATE TABLE IF NOT EXISTS bookings (
     status TEXT DEFAULT 'Confirmed',
     payment_method TEXT DEFAULT 'Cash',
     receipt_url TEXT,
-    payment_status TEXT DEFAULT 'Pending'
+    payment_status TEXT DEFAULT 'Pending',
+    discount_type TEXT DEFAULT 'Regular',
+    discount_id_url TEXT
 );
 
 -- 9. Payment Settings Table (GCash & PayMaya QR Configuration)
@@ -142,3 +145,42 @@ CREATE TABLE IF NOT EXISTS driver_ratings (
     feedback TEXT,
     timestamp BIGINT
 );
+
+-- =====================================================================
+-- Temporary Admin Accounts & RLS Permissions Setup
+-- =====================================================================
+
+-- 1. Primary Admin Account (Upsert on Primary Key)
+INSERT INTO users (user_id, fullname, email, password, role)
+VALUES ('admin_01', 'System Administrator', 'admin@transitgo.com', 'admin123', 'Administrator')
+ON CONFLICT (user_id) DO UPDATE
+SET fullname = EXCLUDED.fullname,
+    email = EXCLUDED.email,
+    password = EXCLUDED.password,
+    role = EXCLUDED.role;
+
+-- 2. Temporary Admin Account (Upsert on Primary Key)
+INSERT INTO users (user_id, fullname, email, password, role)
+VALUES ('admin_temp', 'Temporary Admin', 'temp.admin@transitgo.com', 'admin123', 'Administrator')
+ON CONFLICT (user_id) DO UPDATE
+SET fullname = EXCLUDED.fullname,
+    email = EXCLUDED.email,
+    password = EXCLUDED.password,
+    role = EXCLUDED.role;
+
+-- 3. Disable Row Level Security (RLS)
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE buses DISABLE ROW LEVEL SECURITY;
+ALTER TABLE drivers DISABLE ROW LEVEL SECURITY;
+ALTER TABLE conductors DISABLE ROW LEVEL SECURITY;
+ALTER TABLE bus_stops DISABLE ROW LEVEL SECURITY;
+ALTER TABLE bus_routes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE bus_schedules DISABLE ROW LEVEL SECURITY;
+ALTER TABLE bookings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE payment_settings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE bus_locations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE driver_ratings DISABLE ROW LEVEL SECURITY;
+
+-- 4. Grant Full API Access
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;

@@ -68,6 +68,8 @@ fun RouteManagementScreen(onBack: () -> Unit = {}) {
     var editingRoute by remember { mutableStateOf<BusRoute?>(null) }
     var trackingRoute by remember { mutableStateOf<BusRoute?>(null) }
     var routeToDelete by remember { mutableStateOf<BusRoute?>(null) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val routeList = remember { mutableStateListOf<BusRoute>() }
 
@@ -99,17 +101,7 @@ fun RouteManagementScreen(onBack: () -> Unit = {}) {
         return
     }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = AdminGreen,
-                contentColor = Color.White
-            ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Create Route")
-            }
-        }
-    ) { innerPadding ->
+    Scaffold { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -119,16 +111,28 @@ fun RouteManagementScreen(onBack: () -> Unit = {}) {
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = AdminGreen
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = AdminGreen
+                        )
+                    }
+                    Text("Route Management", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                 }
-                Text("Route Management", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+
+                IconButton(
+                    onClick = { showAddDialog = true },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(AdminGreen, shape = RoundedCornerShape(8.dp))
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Create Route", tint = Color.White)
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -290,10 +294,10 @@ fun RouteManagementScreen(onBack: () -> Unit = {}) {
                 DatabaseManager.deleteBusRoute(
                     routeId = target.routeId,
                     onSuccess = {
-                        Toast.makeText(context, "Route ${target.routeId} deleted!", Toast.LENGTH_SHORT).show()
+                        successMessage = "Route ${target.routeId} deleted!"
                     },
                     onFailure = { e ->
-                        Toast.makeText(context, "Failed to delete: ${e.message}", Toast.LENGTH_SHORT).show()
+                        errorMessage = "Failed to delete: ${e.message}"
                     }
                 )
                 routeList.remove(target)
@@ -902,7 +906,7 @@ fun RouteManagementScreen(onBack: () -> Unit = {}) {
                         // Save Route directly to Cloud Firestore
                         DatabaseManager.saveBusRoute(updatedRoute)
 
-                        Toast.makeText(context, "Route $autoRouteId saved to Cloud Database!", Toast.LENGTH_SHORT).show()
+                        successMessage = "Route $autoRouteId saved to Cloud Database!"
                         showAddDialog = false
                         editingRoute = null
                     },
@@ -919,6 +923,28 @@ fun RouteManagementScreen(onBack: () -> Unit = {}) {
                     Text("Cancel", color = Color.DarkGray, fontWeight = FontWeight.Medium)
                 }
             }
+        )
+    }
+
+    // SUCCESS SWEET ALERT
+    if (successMessage != null) {
+        SweetAlertDialog(
+            type = SweetAlertType.SUCCESS,
+            title = "Success",
+            message = successMessage!!,
+            onConfirm = { successMessage = null },
+            onDismiss = { successMessage = null }
+        )
+    }
+
+    // ERROR SWEET ALERT
+    if (errorMessage != null) {
+        SweetAlertDialog(
+            type = SweetAlertType.ERROR,
+            title = "Error",
+            message = errorMessage!!,
+            onConfirm = { errorMessage = null },
+            onDismiss = { errorMessage = null }
         )
     }
 }

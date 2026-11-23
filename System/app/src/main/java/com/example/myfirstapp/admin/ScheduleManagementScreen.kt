@@ -120,6 +120,8 @@ fun ScheduleManagementScreen(user: user? = null, onBack: () -> Unit = {}) {
     var editingSchedule by remember { mutableStateOf<ScheduleRecord?>(null) }
     var scheduleToDelete by remember { mutableStateOf<ScheduleRecord?>(null) }
     var scheduleLoadError by remember { mutableStateOf("") }
+    var successMessage by remember { mutableStateOf<String?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Google Calendar Real Date State (Default = Today's System Date)
     val todaySdf = remember { SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH) }
@@ -367,17 +369,7 @@ fun ScheduleManagementScreen(user: user? = null, onBack: () -> Unit = {}) {
         )
     }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = AdminGreen,
-                contentColor = Color.White
-            ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Schedule")
-            }
-        }
-    ) { innerPadding ->
+    Scaffold { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -401,7 +393,7 @@ fun ScheduleManagementScreen(user: user? = null, onBack: () -> Unit = {}) {
                     Text("Schedules Management", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     val rejectedList = scheduleList.filter { it.status == "Rejected" }
                     if (rejectedList.isNotEmpty()) {
                         BadgedBox(
@@ -419,6 +411,15 @@ fun ScheduleManagementScreen(user: user? = null, onBack: () -> Unit = {}) {
 
                     IconButton(onClick = { showDatePickerModal = true }) {
                         Icon(imageVector = Icons.Default.CalendarToday, contentDescription = "Open Google Calendar Picker", tint = AdminGreen)
+                    }
+
+                    IconButton(
+                        onClick = { showAddDialog = true },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(AdminGreen, shape = RoundedCornerShape(8.dp))
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "Add Schedule", tint = Color.White)
                     }
                 }
             }
@@ -1148,13 +1149,15 @@ fun ScheduleManagementScreen(user: user? = null, onBack: () -> Unit = {}) {
                                     scheduleList.add(0, newScheduleRecord)
                                 }
                                 isSaving = false
-                                Toast.makeText(context, "Schedule $autoScheduleId saved.", Toast.LENGTH_SHORT).show()
+                                successMessage = "Schedule $autoScheduleId saved successfully."
                                 showAddDialog = false
                                 editingSchedule = null
                             },
                             onFailure = { error ->
                                 isSaving = false
-                                dialogError = error.localizedMessage ?: "Could not save schedule. Check your connection and Firestore permissions."
+                                val msg = error.localizedMessage ?: "Could not save schedule. Check your connection and Firestore permissions."
+                                dialogError = msg
+                                errorMessage = msg
                             }
                         )
                     },
@@ -1188,16 +1191,38 @@ fun ScheduleManagementScreen(user: user? = null, onBack: () -> Unit = {}) {
                 DatabaseManager.deleteBusSchedule(
                     scheduleId = targetToDelete.scheduleId,
                     onSuccess = {
-                        Toast.makeText(context, "Schedule ${targetToDelete.scheduleId} deleted!", Toast.LENGTH_SHORT).show()
+                        successMessage = "Schedule ${targetToDelete.scheduleId} deleted!"
                     },
                     onFailure = { e ->
-                        Toast.makeText(context, "Failed to delete: ${e.message}", Toast.LENGTH_SHORT).show()
+                        errorMessage = "Failed to delete: ${e.message}"
                     }
                 )
                 scheduleList.removeIf { it.scheduleId == targetToDelete.scheduleId }
                 scheduleToDelete = null
             },
             onDismiss = { scheduleToDelete = null }
+        )
+    }
+
+    // SUCCESS SWEET ALERT
+    if (successMessage != null) {
+        SweetAlertDialog(
+            type = SweetAlertType.SUCCESS,
+            title = "Success",
+            message = successMessage!!,
+            onConfirm = { successMessage = null },
+            onDismiss = { successMessage = null }
+        )
+    }
+
+    // ERROR SWEET ALERT
+    if (errorMessage != null) {
+        SweetAlertDialog(
+            type = SweetAlertType.ERROR,
+            title = "Error",
+            message = errorMessage!!,
+            onConfirm = { errorMessage = null },
+            onDismiss = { errorMessage = null }
         )
     }
 }

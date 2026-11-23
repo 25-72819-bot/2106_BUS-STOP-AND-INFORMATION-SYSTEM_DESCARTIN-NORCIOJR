@@ -8,6 +8,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -52,6 +54,10 @@ fun SelectSeatScreen(
     var receiptUriStr by remember { mutableStateOf("") }
     var paymentSettings by remember { mutableStateOf(PaymentSettings()) }
 
+    var discountType by remember { mutableStateOf("Regular (No Discount)") }
+    var discountIdUriStr by remember { mutableStateOf("") }
+    var discountDropdownExpanded by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         DatabaseManager.listenToPaymentSettings(
             onUpdate = { settings ->
@@ -67,6 +73,15 @@ fun SelectSeatScreen(
         if (uri != null) {
             receiptUriStr = uri.toString()
             Toast.makeText(context, "Real receipt image attached from gallery!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val discountIdPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        if (uri != null) {
+            discountIdUriStr = uri.toString()
+            Toast.makeText(context, "Valid ID image attached for discount!", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -96,7 +111,12 @@ fun SelectSeatScreen(
     }
 
     val selectedSeats = seatsList.filter { it.status == "Selected" }
-    val totalPrice = selectedSeats.size * unitFare
+    val unadjustedPrice = selectedSeats.size * unitFare
+    val totalPrice = if (discountType == "Regular (No Discount)") {
+        unadjustedPrice
+    } else {
+        unadjustedPrice * 0.8
+    }
 
     Scaffold(
         topBar = {
@@ -116,7 +136,11 @@ fun SelectSeatScreen(
                 color = Color.White,
                 shadowElevation = 8.dp
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -124,6 +148,64 @@ fun SelectSeatScreen(
                     ) {
                         Text("Price:", fontSize = 15.sp, fontWeight = FontWeight.Medium, color = Color.DarkGray)
                         Text("₱%.2f".format(totalPrice), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = TransitGreen)
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text("Discount Type:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    ExposedDropdownMenuBox(
+                        expanded = discountDropdownExpanded,
+                        onExpandedChange = { discountDropdownExpanded = !discountDropdownExpanded },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedTextField(
+                            value = discountType,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Select Discount") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = discountDropdownExpanded) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = TransitGreen,
+                                unfocusedBorderColor = Color.LightGray
+                            )
+                        )
+                        ExposedDropdownMenu(
+                            expanded = discountDropdownExpanded,
+                            onDismissRequest = { discountDropdownExpanded = false }
+                        ) {
+                            listOf(
+                                "Regular (No Discount)",
+                                "Student (20% Off)",
+                                "PWD (20% Off)",
+                                "Senior Citizen (20% Off)"
+                            ).forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        discountType = option
+                                        discountDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    if (discountType != "Regular (No Discount)") {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        OutlinedButton(
+                            onClick = { discountIdPickerLauncher.launch("image/*") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (discountIdUriStr.isNotBlank()) Color(0xFF2E7D32) else TransitGreen)
+                        ) {
+                            Text(
+                                if (discountIdUriStr.isNotBlank()) "✓ Valid ID Attached for $discountType" else "Upload Valid ID Image for $discountType (Gallery)",
+                                fontSize = 12.sp,
+                                color = if (discountIdUriStr.isNotBlank()) Color(0xFF2E7D32) else TransitGreen
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -191,6 +273,8 @@ fun SelectSeatScreen(
                         onClick = {
                             if (selectedSeats.isEmpty()) {
                                 Toast.makeText(context, "Please select at least one seat", Toast.LENGTH_SHORT).show()
+                            } else if (discountType != "Regular (No Discount)" && discountIdUriStr.isBlank()) {
+                                Toast.makeText(context, "Please upload your valid ID image for $discountType", Toast.LENGTH_SHORT).show()
                             } else if (paymentMethod != "Cash" && receiptUriStr.isBlank()) {
                                 Toast.makeText(context, "Please upload your real $paymentMethod receipt image from gallery", Toast.LENGTH_SHORT).show()
                             } else {
@@ -205,7 +289,9 @@ fun SelectSeatScreen(
                                     passengerEmail = "passenger@transitgo.com",
                                     paymentMethod = paymentMethod,
                                     receiptUrl = receiptUriStr,
-                                    paymentStatus = if (paymentMethod == "Cash") "Pay Cash to Conductor" else "Pending Receipt Verification"
+                                    paymentStatus = if (paymentMethod == "Cash") "Pay Cash to Conductor" else "Pending Receipt Verification",
+                                    discountType = discountType,
+                                    discountIdUrl = discountIdUriStr
                                 )
                                 DatabaseManager.saveBooking(
                                     newBooking,

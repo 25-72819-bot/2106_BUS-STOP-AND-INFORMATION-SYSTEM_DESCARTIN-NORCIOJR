@@ -289,9 +289,9 @@ fun CommuterProfileScreen(
                             email = it
                             profileErrorMessage = ""
                         },
-                        label = { Text("Email Address (@g.batstate-u.edu.ph)") },
+                        label = { Text("Email Address") },
                         leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = TransitGreen) },
-                        supportingText = { Text("Must be @g.batstate-u.edu.ph email", fontSize = 11.sp) },
+                        supportingText = { Text("Enter a valid email address", fontSize = 11.sp) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
@@ -341,7 +341,7 @@ fun CommuterProfileScreen(
                             when {
                                 fullName.isBlank() -> profileErrorMessage = "Full name cannot be empty"
                                 email.isBlank() -> profileErrorMessage = "Email address cannot be empty"
-                                !email.trim().lowercase().endsWith("@g.batstate-u.edu.ph") -> profileErrorMessage = "Email must end with @g.batstate-u.edu.ph"
+                                !email.contains("@") || !email.contains(".") -> profileErrorMessage = "Please enter a valid email address"
                                 password.isNotBlank() && password.length < 8 -> profileErrorMessage = "Password must be at least 8 characters"
                                 else -> {
                                     isSavingProfile = true

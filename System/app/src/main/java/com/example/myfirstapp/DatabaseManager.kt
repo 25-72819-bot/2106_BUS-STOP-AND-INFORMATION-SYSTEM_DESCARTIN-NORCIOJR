@@ -32,7 +32,7 @@ data class ConductorRecord(
     var username: String = "",
     var role: String = "Conductor",
     var assignedBusId: String = "",
-    var status: String = "On Duty",
+    var status: String = "Active",
     var password: String = "password123"
 )
 
@@ -46,7 +46,9 @@ data class BookingRecord(
     val status: String = "Confirmed",
     val paymentMethod: String = "Cash",
     val receiptUrl: String = "",
-    val paymentStatus: String = "Pending"
+    val paymentStatus: String = "Pending",
+    val discountType: String = "Regular (No Discount)",
+    val discountIdUrl: String = ""
 )
 
 data class LiveBusLocation(
@@ -210,7 +212,7 @@ object DatabaseManager {
             try {
                 val url = URL("$SUPABASE_URL/users")
                 val connection = (url.openConnection() as HttpURLConnection).apply {
-                    requestMethod = "POST"
+                        requestMethod = "POST"
                     setRequestProperty("apikey", SUPABASE_KEY)
                     setRequestProperty("Authorization", "Bearer $SUPABASE_KEY")
                     setRequestProperty("Content-Type", "application/json")
@@ -271,14 +273,14 @@ object DatabaseManager {
         }
     }
 
-    // --- BUSES ---
+    // --- BUSES MANAGEMENT ---
     fun saveBus(
         bus: Bus,
         onSuccess: () -> Unit = {},
         onFailure: (Exception) -> Unit = {}
     ) {
         ioScope.launch {
-            val json = JSONObject().apply {
+            val jsonWithStatus = JSONObject().apply {
                 put("bus_id", bus.busId)
                 put("bus_number", bus.busNumber)
                 put("plate_number", bus.plateNumber)
@@ -293,7 +295,34 @@ object DatabaseManager {
                 put("image_url", bus.imageUrl)
             }.toString()
 
-            val res = makeRequest("buses", "POST", json)
+            val jsonWithoutStatus = JSONObject().apply {
+                put("bus_id", bus.busId)
+                put("bus_number", bus.busNumber)
+                put("plate_number", bus.plateNumber)
+                put("bus_type", bus.busType)
+                put("capacity", bus.capacity)
+                put("assigned_driver", bus.assignedDriver)
+                put("operator", bus.operator)
+                put("route", bus.route)
+                put("bus_stop", bus.busStop)
+                put("departure_time", bus.departureTime)
+                put("image_url", bus.imageUrl)
+            }.toString()
+
+            val encodedBusId = java.net.URLEncoder.encode(bus.busId.trim(), "UTF-8")
+            var res = makeRequest("buses?bus_id=eq.$encodedBusId", "PATCH", jsonWithStatus)
+            if (res == null || res == "[]") {
+                res = makeRequest("buses", "POST", jsonWithStatus)
+            }
+
+            // Fallback if status column is missing in Supabase schema
+            if (res == null) {
+                res = makeRequest("buses?bus_id=eq.$encodedBusId", "PATCH", jsonWithoutStatus)
+                if (res == null || res == "[]") {
+                    res = makeRequest("buses", "POST", jsonWithoutStatus)
+                }
+            }
+
             withContext(Dispatchers.Main) {
                 if (res != null) onSuccess() else onFailure(Exception("Failed to save bus"))
             }
@@ -706,7 +735,7 @@ object DatabaseManager {
     ) {
         ioScope.launch {
             val resolvedDriver = if (driverName.isNotBlank()) driverName else schedule.bus.assignedDriver
-            val json = JSONObject().apply {
+            val jsonWithDriver = JSONObject().apply {
                 put("schedule_id", schedule.scheduleId)
                 put("bus_number", schedule.bus.busNumber)
                 put("route_name", schedule.route.routeName)
@@ -717,10 +746,28 @@ object DatabaseManager {
                 put("schedule_date", scheduleDate)
             }.toString()
 
+            val jsonFallback = JSONObject().apply {
+                put("schedule_id", schedule.scheduleId)
+                put("bus_number", schedule.bus.busNumber)
+                put("route_name", schedule.route.routeName)
+                put("departure_time", schedule.departureTime)
+                put("arrival_time", schedule.arrivalTime)
+                put("status", schedule.status)
+                put("schedule_date", scheduleDate)
+            }.toString()
+
             val encodedSchedId = java.net.URLEncoder.encode(schedule.scheduleId.trim(), "UTF-8")
-            var res = makeRequest("bus_schedules?schedule_id=eq.$encodedSchedId", "PATCH", json)
+            var res = makeRequest("bus_schedules?schedule_id=eq.$encodedSchedId", "PATCH", jsonWithDriver)
             if (res == null || res == "[]") {
-                res = makeRequest("bus_schedules", "POST", json)
+                res = makeRequest("bus_schedules", "POST", jsonWithDriver)
+            }
+
+            // Fallback if driver_name column is missing in Supabase schema
+            if (res == null) {
+                res = makeRequest("bus_schedules?schedule_id=eq.$encodedSchedId", "PATCH", jsonFallback)
+                if (res == null || res == "[]") {
+                    res = makeRequest("bus_schedules", "POST", jsonFallback)
+                }
             }
 
             if (resolvedDriver.isNotBlank() && resolvedDriver != "Unassigned") {
@@ -1091,7 +1138,7 @@ object DatabaseManager {
                                     username = obj.safeString("username"),
                                     role = obj.safeString("role", "Conductor"),
                                     assignedBusId = obj.safeString("assigned_bus_id"),
-                                    status = obj.safeString("status", "On Duty"),
+                                    status = obj.safeString("status", "Active"),
                                     password = obj.safeString("password", "password123")
                                 )
                             )
@@ -1137,6 +1184,8 @@ object DatabaseManager {
                 put("payment_method", booking.paymentMethod)
                 put("receipt_url", booking.receiptUrl)
                 put("payment_status", booking.paymentStatus)
+                put("discount_type", booking.discountType)
+                put("discount_id_url", booking.discountIdUrl)
             }.toString()
 
             val res = makeRequest("bookings", "POST", json)
@@ -1173,6 +1222,8 @@ object DatabaseManager {
                         val list = mutableListOf<BookingRecord>()
                         for (i in 0 until arr.length()) {
                             val obj = arr.getJSONObject(i)
+                            val dType = obj.safeString("discount_type", "Regular (No Discount)")
+                            val normalizedDiscountType = if (dType == "Regular") "Regular (No Discount)" else dType
                             list.add(
                                 BookingRecord(
                                     bookingId = obj.safeString("booking_id"),
@@ -1184,7 +1235,9 @@ object DatabaseManager {
                                     status = obj.safeString("status", "Confirmed"),
                                     paymentMethod = obj.safeString("payment_method", "Cash"),
                                     receiptUrl = obj.safeString("receipt_url", ""),
-                                    paymentStatus = obj.safeString("payment_status", "Pending")
+                                    paymentStatus = obj.safeString("payment_status", "Pending"),
+                                    discountType = normalizedDiscountType,
+                                    discountIdUrl = obj.safeString("discount_id_url", "")
                                 )
                             )
                         }
@@ -1252,7 +1305,7 @@ object DatabaseManager {
         ioScope.launch {
             try {
                 val fileName = "bus_${System.currentTimeMillis()}.jpg"
-                val url = URL("https://ulhylotzjyvevtiufrmb.supabase.co/storage/v1/object/bus_image/$fileName")
+                val url = URL("https://mbnfczuzhfiksjrhgezo.supabase.co/storage/v1/object/bus_image/$fileName")
                 val connection = (url.openConnection() as HttpURLConnection).apply {
                     requestMethod = "POST"
                     setRequestProperty("apikey", SUPABASE_KEY)
@@ -1270,7 +1323,7 @@ object DatabaseManager {
 
                 val responseCode = connection.responseCode
                 if (responseCode in 200..299) {
-                    val publicUrl = "https://ulhylotzjyvevtiufrmb.supabase.co/storage/v1/object/public/bus_image/$fileName"
+                    val publicUrl = "https://mbnfczuzhfiksjrhgezo.supabase.co/storage/v1/object/public/bus_image/$fileName"
                     withContext(Dispatchers.Main) { onSuccess(publicUrl) }
                 } else {
                     // Fallback to Base64 string if 401/403 unauthorized occurs due to bucket RLS policies
@@ -1304,7 +1357,7 @@ object DatabaseManager {
         ioScope.launch {
             try {
                 val fileName = "profile_${System.currentTimeMillis()}.jpg"
-                val url = URL("https://ulhylotzjyvevtiufrmb.supabase.co/storage/v1/object/student_profile/$fileName")
+                val url = URL("https://mbnfczuzhfiksjrhgezo.supabase.co/storage/v1/object/student_profile/$fileName")
                 val connection = (url.openConnection() as HttpURLConnection).apply {
                     requestMethod = "POST"
                     setRequestProperty("apikey", SUPABASE_KEY)
@@ -1322,7 +1375,7 @@ object DatabaseManager {
 
                 val responseCode = connection.responseCode
                 if (responseCode in 200..299) {
-                    val publicUrl = "https://ulhylotzjyvevtiufrmb.supabase.co/storage/v1/object/public/student_profile/$fileName"
+                    val publicUrl = "https://mbnfczuzhfiksjrhgezo.supabase.co/storage/v1/object/public/student_profile/$fileName"
                     withContext(Dispatchers.Main) { onSuccess(publicUrl) }
                 } else {
                     val b64 = convertUriToBase64(context, imageUri)

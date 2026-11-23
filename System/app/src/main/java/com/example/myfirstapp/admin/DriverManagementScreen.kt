@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Edit
@@ -319,6 +320,8 @@ fun DriverManagementScreen(onBack: () -> Unit) {
     var showAddDialog by remember { mutableStateOf(false) }
     var editingDriver by remember { mutableStateOf<DriverRecord?>(null) }
     var driverToDelete by remember { mutableStateOf<DriverRecord?>(null) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     var searchQuery by remember { mutableStateOf("") }
     val driverList = remember { mutableStateListOf<DriverRecord>() }
@@ -340,17 +343,7 @@ fun DriverManagementScreen(onBack: () -> Unit) {
         it.email.contains(searchQuery, ignoreCase = true)
     }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = AdminGreen,
-                contentColor = Color.White
-            ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Driver")
-            }
-        }
-    ) { innerPadding ->
+    Scaffold { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -361,18 +354,30 @@ fun DriverManagementScreen(onBack: () -> Unit) {
             // Header Row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = AdminGreen
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = AdminGreen
+                        )
+                    }
+                    Column {
+                        Text("Driver Management", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                        Text("${driverList.size} Active Drivers Registered", fontSize = 12.sp, color = Color.Gray)
+                    }
                 }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Driver Management", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-                    Text("${driverList.size} Active Drivers Registered", fontSize = 12.sp, color = Color.Gray)
+
+                IconButton(
+                    onClick = { showAddDialog = true },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(AdminGreen, shape = RoundedCornerShape(8.dp))
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Driver", tint = Color.White)
                 }
             }
 
@@ -449,21 +454,6 @@ fun DriverManagementScreen(onBack: () -> Unit) {
                                             Text("ID: ${driver.driverId}", fontSize = 11.sp, color = Color.Gray)
                                         }
                                     }
-
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Surface(
-                                            color = if (driver.employmentStatus == "On Duty") Color(0xFFE8F5E9) else Color(0xFFF5F5F5),
-                                            shape = RoundedCornerShape(6.dp)
-                                        ) {
-                                            Text(
-                                                text = driver.employmentStatus,
-                                                fontSize = 11.sp,
-                                                color = if (driver.employmentStatus == "On Duty") AdminGreen else Color.DarkGray,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
 
@@ -531,10 +521,10 @@ fun DriverManagementScreen(onBack: () -> Unit) {
                 DatabaseManager.deleteDriver(
                     driverId = target.driverId,
                     onSuccess = {
-                        Toast.makeText(context, "Driver ${target.driverName} deleted!", Toast.LENGTH_SHORT).show()
+                        successMessage = "Driver ${target.driverName} deleted!"
                     },
                     onFailure = { e ->
-                        Toast.makeText(context, "Failed to delete: ${e.message}", Toast.LENGTH_SHORT).show()
+                        errorMessage = "Failed to delete: ${e.message}"
                     }
                 )
                 driverList.remove(target)
@@ -559,8 +549,6 @@ fun DriverManagementScreen(onBack: () -> Unit) {
         var password by remember { mutableStateOf(targetDriver?.password ?: "") }
         var passwordVisible by remember { mutableStateOf(false) }
 
-        var selectedStatus by remember { mutableStateOf(targetDriver?.employmentStatus ?: "On Duty") }
-
         var licenseImageUri by remember { mutableStateOf<Uri?>(null) }
         var licenseBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
@@ -568,6 +556,33 @@ fun DriverManagementScreen(onBack: () -> Unit) {
         var ocrSuccessMsg by remember { mutableStateOf("") }
         var dialogError by remember { mutableStateOf("") }
         var isSaving by remember { mutableStateOf(false) }
+
+        // Date Picker Dialog Helper
+        val showDatePicker = {
+            val calendar = java.util.Calendar.getInstance()
+            try {
+                val parts = licenseExpiry.split("-")
+                if (parts.size == 3) {
+                    val y = parts[0].toIntOrNull()
+                    val m = parts[1].toIntOrNull()
+                    val d = parts[2].toIntOrNull()
+                    if (y != null && m != null && d != null) {
+                        calendar.set(y, m - 1, d)
+                    }
+                }
+            } catch (_: Exception) {}
+
+            android.app.DatePickerDialog(
+                context,
+                { _, year, month, dayOfMonth ->
+                    val formattedDate = String.format(java.util.Locale.US, "%04d-%02d-%02d", year, month + 1, dayOfMonth)
+                    licenseExpiry = formattedDate
+                },
+                calendar.get(java.util.Calendar.YEAR),
+                calendar.get(java.util.Calendar.MONTH),
+                calendar.get(java.util.Calendar.DAY_OF_MONTH)
+            ).show()
+        }
 
         // License Expiration Date Live Validation
         val (isExpiryValid, expiryValidationMsg) = remember(licenseExpiry) { validateLicenseExpiry(licenseExpiry) }
@@ -656,8 +671,6 @@ fun DriverManagementScreen(onBack: () -> Unit) {
             focusedBorderColor = AdminGreen,
             unfocusedBorderColor = Color.LightGray
         )
-
-        val statusOptions = listOf("On Duty", "Off Duty", "On Leave")
 
         AlertDialog(
             onDismissRequest = {
@@ -869,7 +882,7 @@ fun DriverManagementScreen(onBack: () -> Unit) {
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // License Expiry with Live Expiration Validation Badge
+                    // License Expiry with Live Expiration Validation Badge & Date Picker
                     Column(modifier = Modifier.fillMaxWidth()) {
                         OutlinedTextField(
                             value = licenseExpiry,
@@ -879,11 +892,21 @@ fun DriverManagementScreen(onBack: () -> Unit) {
                             singleLine = true,
                             colors = textFieldColors,
                             trailingIcon = {
-                                Icon(
-                                    imageVector = if (isExpiryValid) Icons.Default.Verified else Icons.Default.Error,
-                                    contentDescription = "Validation",
-                                    tint = if (isExpiryValid) AdminGreen else Color(0xFFC62828)
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(onClick = { showDatePicker() }) {
+                                        Icon(
+                                            imageVector = Icons.Default.DateRange,
+                                            contentDescription = "Select Expiration Date",
+                                            tint = AdminGreen
+                                        )
+                                    }
+                                    Icon(
+                                        imageVector = if (isExpiryValid) Icons.Default.Verified else Icons.Default.Error,
+                                        contentDescription = "Validation",
+                                        tint = if (isExpiryValid) AdminGreen else Color(0xFFC62828)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                }
                             },
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -914,27 +937,6 @@ fun DriverManagementScreen(onBack: () -> Unit) {
                                     color = if (isExpiryValid) AdminGreen else Color(0xFFC62828)
                                 )
                             }
-                        }
-                    }
-
-                    // Employment Status
-                    Text("Employment Status", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = Color.Black)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        statusOptions.forEach { status ->
-                            FilterChip(
-                                selected = selectedStatus == status,
-                                onClick = { selectedStatus = status },
-                                label = { Text(status, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = AdminGreen,
-                                    selectedLabelColor = Color.White,
-                                    containerColor = Color(0xFFF0F4F1),
-                                    labelColor = Color.Black
-                                )
-                            )
                         }
                     }
 
@@ -1003,7 +1005,7 @@ fun DriverManagementScreen(onBack: () -> Unit) {
                                     licenseNumber = licenseNumber.trim(),
                                     licenseExpiry = finalExpiry,
                                     assignedBus = targetDriver?.assignedBus ?: "Unassigned",
-                                    employmentStatus = selectedStatus,
+                                    employmentStatus = "Active",
                                     email = finalEmail,
                                     password = finalPass
                                 )
@@ -1015,7 +1017,7 @@ fun DriverManagementScreen(onBack: () -> Unit) {
                                     licenseNumber = licenseNumber.trim(),
                                     licenseExpiry = finalExpiry,
                                     assignedBus = targetDriver?.assignedBus ?: "Unassigned",
-                                    employmentStatus = selectedStatus,
+                                    employmentStatus = "Active",
                                     email = finalEmail,
                                     password = finalPass,
                                     onSuccess = {
@@ -1026,14 +1028,15 @@ fun DriverManagementScreen(onBack: () -> Unit) {
                                         } else {
                                             driverList.add(0, newDriver)
                                         }
-                                        Toast.makeText(context, "Driver $finalName saved to Cloud Database!", Toast.LENGTH_SHORT).show()
+                                        successMessage = "Driver $finalName saved to Cloud Database!"
                                         showAddDialog = false
                                         editingDriver = null
                                     },
                                     onFailure = { e ->
                                         isSaving = false
-                                        dialogError = e.localizedMessage ?: "Failed to save driver"
-                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                                        val msg = e.localizedMessage ?: "Failed to save driver"
+                                        dialogError = msg
+                                        errorMessage = "Error: ${e.message}"
                                     }
                                 )
                             },
@@ -1049,6 +1052,28 @@ fun DriverManagementScreen(onBack: () -> Unit) {
                     }
                 }
             }
+        )
+    }
+
+    // SUCCESS SWEET ALERT
+    if (successMessage != null) {
+        SweetAlertDialog(
+            type = SweetAlertType.SUCCESS,
+            title = "Success",
+            message = successMessage!!,
+            onConfirm = { successMessage = null },
+            onDismiss = { successMessage = null }
+        )
+    }
+
+    // ERROR SWEET ALERT
+    if (errorMessage != null) {
+        SweetAlertDialog(
+            type = SweetAlertType.ERROR,
+            title = "Error",
+            message = errorMessage!!,
+            onConfirm = { errorMessage = null },
+            onDismiss = { errorMessage = null }
         )
     }
 }

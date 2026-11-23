@@ -102,7 +102,7 @@ fun AdminDashboardScreen(
             "Schedule" -> ScheduleManagementScreen(user = user, onBack = { activeSubScreen = null })
             "Route" -> RouteManagementScreen(onBack = { activeSubScreen = null })
             "Tracker" -> AdminLiveBusTrackingScreen(onBack = { activeSubScreen = null })
-            "Terminal" -> TerminalManagementScreen(onBack = { activeSubScreen = null })
+
             else -> {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -262,17 +262,12 @@ fun AdminDashboardScreen(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     QuickActionTile(
-                        icon = Icons.Default.Store,
-                        title = "Terminal\nHubs",
-                        modifier = Modifier.weight(1f),
-                        onClick = { activeSubScreen = "Terminal" }
-                    )
-                    QuickActionTile(
                         icon = Icons.Default.Person,
                         title = "Conductor\nManagement",
                         modifier = Modifier.weight(1f),
                         onClick = { activeSubScreen = "Conductor" }
                     )
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
 

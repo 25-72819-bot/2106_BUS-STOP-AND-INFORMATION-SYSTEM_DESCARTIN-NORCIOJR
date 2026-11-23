@@ -171,6 +171,8 @@ fun BusManagementScreen(onBack: () -> Unit) {
     var viewingBus by remember { mutableStateOf<Bus?>(null) }
     var editingBus by remember { mutableStateOf<Bus?>(null) }
     var busToDelete by remember { mutableStateOf<Bus?>(null) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val registeredDriverRecords = remember { mutableStateListOf<DriverRecord>() }
     val busTypeOptions = listOf("Air-conditioned", "Ordinary")
@@ -208,17 +210,7 @@ fun BusManagementScreen(onBack: () -> Unit) {
         )
     }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = AdminGreen,
-                contentColor = Color.White
-            ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Bus")
-            }
-        }
-    ) { innerPadding ->
+    Scaffold { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -228,16 +220,28 @@ fun BusManagementScreen(onBack: () -> Unit) {
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = AdminGreen
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = AdminGreen
+                        )
+                    }
+                    Text("Bus Management", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                 }
-                Text("Bus Management", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+
+                IconButton(
+                    onClick = { showAddDialog = true },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(AdminGreen, shape = RoundedCornerShape(8.dp))
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Bus", tint = Color.White)
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -253,7 +257,7 @@ fun BusManagementScreen(onBack: () -> Unit) {
                         Icon(imageVector = Icons.Default.DirectionsBus, contentDescription = "Empty", tint = Color.Gray, modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("No Buses Found", fontWeight = FontWeight.Bold, color = Color.Black)
-                        Text("Tap + button below to add a bus", fontSize = 12.sp, color = Color.Gray)
+                        Text("Tap + button in the header to add a bus", fontSize = 12.sp, color = Color.Gray)
                     }
                 }
             } else {
@@ -289,26 +293,6 @@ fun BusManagementScreen(onBack: () -> Unit) {
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text("Bus ID: ${bus.busId}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = AdminGreen)
-                                            Surface(
-                                                color = when (bus.status) {
-                                                    "Active" -> Color(0xFFE8F5E9)
-                                                    "In Transit" -> Color(0xFFE3F2FD)
-                                                    else -> Color(0xFFFFEBEE)
-                                                },
-                                                shape = RoundedCornerShape(6.dp)
-                                            ) {
-                                                Text(
-                                                    text = bus.status,
-                                                    fontSize = 11.sp,
-                                                    color = when (bus.status) {
-                                                        "Active" -> AdminGreen
-                                                        "In Transit" -> Color(0xFF1565C0)
-                                                        else -> Color(0xFFC62828)
-                                                    },
-                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
                                         }
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
@@ -596,7 +580,6 @@ fun BusManagementScreen(onBack: () -> Unit) {
         var routeDropdownExpanded by remember { mutableStateOf(false) }
         var assignedRoute by remember { mutableStateOf(targetBus?.route?.ifEmpty { availableRoutes.firstOrNull()?.routeName ?: "Unassigned" } ?: (availableRoutes.firstOrNull()?.routeName ?: "Unassigned")) }
 
-        var selectedStatus by remember { mutableStateOf(targetBus?.status ?: "Active") }
         var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
         var isLoading by remember { mutableStateOf(false) }
         val currentImageUrl = targetBus?.imageUrl ?: ""
@@ -621,8 +604,6 @@ fun BusManagementScreen(onBack: () -> Unit) {
             focusedBorderColor = AdminGreen,
             unfocusedBorderColor = Color.LightGray
         )
-
-        val statusOptions = listOf("Active", "In Transit", "Inactive")
 
         AlertDialog(
             onDismissRequest = {
@@ -879,27 +860,6 @@ fun BusManagementScreen(onBack: () -> Unit) {
                         }
                     }
 
-                    // Bus Status Selection
-                    Text("Bus Status", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = Color.Black)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        statusOptions.forEach { status ->
-                            FilterChip(
-                                selected = selectedStatus == status,
-                                onClick = { selectedStatus = status },
-                                label = { Text(status, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = AdminGreen,
-                                    selectedLabelColor = Color.White,
-                                    containerColor = Color(0xFFF0F4F1),
-                                    labelColor = Color.Black
-                                )
-                            )
-                        }
-                    }
-
                     if (dialogError.isNotEmpty()) {
                         Text(dialogError, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
                     }
@@ -919,7 +879,7 @@ fun BusManagementScreen(onBack: () -> Unit) {
                                 busId = autoGeneratedId,
                                 busNumber = busCompany.trim(),
                                 capacity = cap,
-                                status = selectedStatus,
+                                status = "Active",
                                 plateNumber = plateNumber.trim(),
                                 busType = busType.trim(),
                                 assignedDriver = assignedDriver,
@@ -928,38 +888,47 @@ fun BusManagementScreen(onBack: () -> Unit) {
                                 imageUrl = imageUrlToUse
                             )
 
-                            val existingIndex = busList.indexOfFirst { it.busId == autoGeneratedId }
-                            if (existingIndex != -1) {
-                                busList[existingIndex] = updatedBus
-                            } else {
-                                busList.add(0, updatedBus)
-                            }
+                            isLoading = true
+                            DatabaseManager.saveBus(
+                                updatedBus,
+                                onSuccess = {
+                                    isLoading = false
+                                    val existingIndex = busList.indexOfFirst { it.busId == autoGeneratedId }
+                                    if (existingIndex != -1) {
+                                        busList[existingIndex] = updatedBus
+                                    } else {
+                                        busList.add(0, updatedBus)
+                                    }
 
-                            DatabaseManager.saveBus(updatedBus)
+                                    if (assignedDriver != "Unassigned") {
+                                        val matchedDriver = registeredDriverRecords.find { it.driverName.equals(assignedDriver, ignoreCase = true) }
+                                        if (matchedDriver != null) {
+                                            val busLabel = if (updatedBus.busNumber.isNotBlank()) updatedBus.busNumber else "BUS-${updatedBus.busId}"
+                                            val busPlateLabel = if (updatedBus.plateNumber.isNotBlank()) " (${updatedBus.plateNumber})" else ""
+                                            DatabaseManager.saveDriverDetails(
+                                                driverId = matchedDriver.driverId,
+                                                driverName = matchedDriver.driverName,
+                                                contactNumber = matchedDriver.contactNumber,
+                                                licenseNumber = matchedDriver.licenseNumber,
+                                                licenseExpiry = matchedDriver.licenseExpiry,
+                                                assignedBus = "$busLabel$busPlateLabel",
+                                                employmentStatus = matchedDriver.employmentStatus,
+                                                email = matchedDriver.email,
+                                                password = matchedDriver.password
+                                            )
+                                        }
+                                    }
 
-                            if (assignedDriver != "Unassigned") {
-                                val matchedDriver = registeredDriverRecords.find { it.driverName.equals(assignedDriver, ignoreCase = true) }
-                                if (matchedDriver != null) {
-                                    val busLabel = if (updatedBus.busNumber.isNotBlank()) updatedBus.busNumber else "BUS-${updatedBus.busId}"
-                                    val busPlateLabel = if (updatedBus.plateNumber.isNotBlank()) " (${updatedBus.plateNumber})" else ""
-                                    DatabaseManager.saveDriverDetails(
-                                        driverId = matchedDriver.driverId,
-                                        driverName = matchedDriver.driverName,
-                                        contactNumber = matchedDriver.contactNumber,
-                                        licenseNumber = matchedDriver.licenseNumber,
-                                        licenseExpiry = matchedDriver.licenseExpiry,
-                                        assignedBus = "$busLabel$busPlateLabel",
-                                        employmentStatus = matchedDriver.employmentStatus,
-                                        email = matchedDriver.email,
-                                        password = matchedDriver.password
-                                    )
+                                    successMessage = "Bus $autoGeneratedId successfully saved to Cloud Database!"
+                                    showAddDialog = false
+                                    editingBus = null
+                                    selectedImageUri = null
+                                },
+                                onFailure = { e ->
+                                    isLoading = false
+                                    errorMessage = "Failed to save bus: ${e.localizedMessage}"
                                 }
-                            }
-
-                            Toast.makeText(context, "Bus $autoGeneratedId saved to Cloud Database!", Toast.LENGTH_SHORT).show()
-                            showAddDialog = false
-                            editingBus = null
-                            selectedImageUri = null
+                            )
                         }
 
                         if (selectedImageUri != null) {
@@ -994,6 +963,28 @@ fun BusManagementScreen(onBack: () -> Unit) {
                     Text("Cancel", color = Color.DarkGray, fontWeight = FontWeight.Medium)
                 }
             }
+        )
+    }
+
+    // SUCCESS SWEET ALERT
+    if (successMessage != null) {
+        SweetAlertDialog(
+            type = SweetAlertType.SUCCESS,
+            title = "Success",
+            message = successMessage!!,
+            onConfirm = { successMessage = null },
+            onDismiss = { successMessage = null }
+        )
+    }
+
+    // ERROR SWEET ALERT
+    if (errorMessage != null) {
+        SweetAlertDialog(
+            type = SweetAlertType.ERROR,
+            title = "Error",
+            message = errorMessage!!,
+            onConfirm = { errorMessage = null },
+            onDismiss = { errorMessage = null }
         )
     }
 }

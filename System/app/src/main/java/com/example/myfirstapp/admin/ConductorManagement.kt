@@ -43,6 +43,8 @@ fun ConductorManagementScreen(onBack: () -> Unit) {
     var editingConductor by remember { mutableStateOf<ConductorRecord?>(null) }
     var conductorToDelete by remember { mutableStateOf<ConductorRecord?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         DatabaseManager.listenToConductors(
@@ -69,26 +71,6 @@ fun ConductorManagementScreen(onBack: () -> Unit) {
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Conductor Management", color = Color.White, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = AdminGreen)
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { editingConductor = null; showAddDialog = true },
-                containerColor = AdminGreen,
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Conductor")
-            }
-        },
         containerColor = AdminBg
     ) { padding ->
         Column(
@@ -97,6 +79,33 @@ fun ConductorManagementScreen(onBack: () -> Unit) {
                 .padding(padding)
                 .padding(16.dp)
         ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = AdminGreen
+                        )
+                    }
+                    Text("Conductor Management", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                }
+
+                IconButton(
+                    onClick = { editingConductor = null; showAddDialog = true },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(AdminGreen, shape = RoundedCornerShape(8.dp))
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Conductor", tint = Color.White)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -158,18 +167,7 @@ fun ConductorManagementScreen(onBack: () -> Unit) {
                                         }
                                     }
 
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = if (conductor.status == "On Duty") Color(0xFF4CAF50) else Color(0xFFFF9800)
-                                    ) {
-                                        Text(
-                                            text = conductor.status,
-                                            color = Color.White,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                        )
-                                    }
+
                                 }
 
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -222,7 +220,7 @@ fun ConductorManagementScreen(onBack: () -> Unit) {
         var username by remember { mutableStateOf(target?.username ?: "") }
         var password by remember { mutableStateOf(target?.password ?: "password123") }
         var passwordVisible by remember { mutableStateOf(false) }
-        var status by remember { mutableStateOf(target?.status ?: "On Duty") }
+
         var assignedBusId by remember { mutableStateOf(target?.assignedBusId ?: "") }
         var busDropdownExpanded by remember { mutableStateOf(false) }
         var dialogError by remember { mutableStateOf("") }
@@ -294,17 +292,7 @@ fun ConductorManagementScreen(onBack: () -> Unit) {
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // Status Selection
-                    Text("Employment Status", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        listOf("On Duty", "Off Duty", "On Leave").forEach { st ->
-                            FilterChip(
-                                selected = status == st,
-                                onClick = { status = st },
-                                label = { Text(st) }
-                            )
-                        }
-                    }
+
 
                     // Assigned Bus Dropdown
                     ExposedDropdownMenuBox(
@@ -360,18 +348,20 @@ fun ConductorManagementScreen(onBack: () -> Unit) {
                             username = username.trim(),
                             role = "Conductor",
                             assignedBusId = assignedBusId.trim(),
-                            status = status,
+                            status = "Active",
                             password = password.ifBlank { "password123" }
                         )
                         DatabaseManager.saveConductor(
                             conductor = record,
                             onSuccess = {
-                                Toast.makeText(context, "Conductor saved successfully!", Toast.LENGTH_SHORT).show()
+                                successMessage = "Conductor saved successfully!"
                                 showAddDialog = false
                                 editingConductor = null
                             },
                             onFailure = { e ->
-                                dialogError = e.localizedMessage ?: "Failed to save conductor"
+                                val msg = e.localizedMessage ?: "Failed to save conductor"
+                                dialogError = msg
+                                errorMessage = msg
                             }
                         )
                     },
@@ -401,16 +391,38 @@ fun ConductorManagementScreen(onBack: () -> Unit) {
                 DatabaseManager.deleteConductor(
                     id = target.id,
                     onSuccess = {
-                        Toast.makeText(context, "Conductor deleted.", Toast.LENGTH_SHORT).show()
+                        successMessage = "Conductor deleted."
                         conductorToDelete = null
                     },
                     onFailure = { e ->
-                        Toast.makeText(context, "Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                        errorMessage = "Error: ${e.localizedMessage}"
                         conductorToDelete = null
                     }
                 )
             },
             onDismiss = { conductorToDelete = null }
+        )
+    }
+
+    // SUCCESS SWEET ALERT
+    if (successMessage != null) {
+        SweetAlertDialog(
+            type = SweetAlertType.SUCCESS,
+            title = "Success",
+            message = successMessage!!,
+            onConfirm = { successMessage = null },
+            onDismiss = { successMessage = null }
+        )
+    }
+
+    // ERROR SWEET ALERT
+    if (errorMessage != null) {
+        SweetAlertDialog(
+            type = SweetAlertType.ERROR,
+            title = "Error",
+            message = errorMessage!!,
+            onConfirm = { errorMessage = null },
+            onDismiss = { errorMessage = null }
         )
     }
 }

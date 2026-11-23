@@ -119,9 +119,9 @@ fun SignUpScreen(
                         email = it
                         errorMessage = ""
                     },
-                    label = { Text("Email Address (@g.batstate-u.edu.ph)") },
-                    placeholder = { Text("e.g. 21-12345@g.batstate-u.edu.ph") },
-                    supportingText = { Text("Must use your @g.batstate-u.edu.ph institutional email", fontSize = 11.sp) },
+                    label = { Text("Email Address") },
+                    placeholder = { Text("e.g. user@example.com") },
+                    supportingText = { Text("Enter a valid email address", fontSize = 11.sp) },
                     singleLine = true,
                     colors = textFieldColors,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -213,7 +213,7 @@ fun SignUpScreen(
                         when {
                             fullName.isBlank() -> errorMessage = "Please enter your full name"
                             email.isBlank() -> errorMessage = "Please enter your email address"
-                            !email.trim().lowercase().endsWith("@g.batstate-u.edu.ph") -> errorMessage = "Email must end with @g.batstate-u.edu.ph"
+                            !email.contains("@") || !email.contains(".") -> errorMessage = "Please enter a valid email address"
                             phoneNumber.isBlank() -> errorMessage = "Please enter your phone number"
                             password.length < 8 -> errorMessage = "Password must be at least 8 characters"
                             !agreedToTerms -> errorMessage = "Please agree to the Terms of Service"
